@@ -1,0 +1,63 @@
+---
+
+# Prerequisits: SSH access with root and password
+
+- hosts: server
+
+
+  vars_prompt:
+    - name: user_name
+      prompt: Enter user name to use
+      private: no
+      default: user
+
+
+  remote_user: "{{ user_name }}"
+
+
+  tasks:
+
+  - name: Do not allow root access via ssh
+    sudo: yes
+    lineinfile:
+      line: PermitRootLogin no
+      dest: /etc/ssh/sshd_config
+      regexp: ^PermitRootLogin
+    notify: restart ssh
+
+  - name: Do not allow ssh access via password
+    sudo: yes
+    lineinfile:
+      line: PasswordAuthentication no
+      dest: /etc/ssh/sshd_config
+      regexp: ^PasswordAuthentication
+    notify: restart ssh
+
+  - name: Delete ssh host keys
+    sudo: yes
+    shell: "rm /etc/ssh/ssh_host_* && dpkg-reconfigure openssh-server"
+    notify: restart ssh
+    when: renew_ssh is defined and renew_ssh == "yes"
+
+  - name: Make sure uft is installed
+    sudo: yes
+    apt:
+      name: ufw
+      state: latest
+
+  - name: Configure firewall
+    sudo: yes
+    ufw:
+      policy: deny
+      rule: allow
+      name: OpenSSH
+      state: enabled
+
+
+
+  handlers:
+    - name: restart ssh
+      sudo: yes
+      service:
+        name: ssh
+        state: restarted

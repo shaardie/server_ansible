@@ -1,0 +1,46 @@
+---
+
+# Prerequisits: SSH access with root and password
+
+- hosts: server
+  vars_prompt:
+    - name: root_password
+      prompt: Enter new root password
+      private: yes
+      encrypt: sha512_crypt
+      confirm: yes
+      salt_size: 7
+    - name: user_name
+      prompt: Enter user name
+      private: no
+      default: user
+    - name: user_password
+      prompt: Enter new user password
+      private: yes
+      encrypt: sha512_crypt
+      confirm: yes
+      salt_size: 7
+    - name: ssh_key
+      prompt: Enter filename of public ssh key
+      default: "~/.ssh/id_rsa.pub"
+      private: no
+  remote_user: root
+  tasks:
+  - name: apply root password
+    user:
+      name: root
+      password: "{{ root_password }}"
+  - name: ensure sudo is installed
+    apt:
+      name: sudo
+  - name: ensure user is present
+    user:
+      name: "{{ user_name }}"
+      append: yes
+      groups: sudo
+      shell: /bin/bash
+      password: "{{ user_password }}"
+  - name: ensure user is accessable with ssh key
+    authorized_key:
+      user: "{{ user_name }}"
+      key: "{{ lookup('file', ssh_key) }}"

@@ -1,0 +1,3 @@
+ansible-playbook --inventory hosts prebook.yml --ask-pass
+ansible-playbook --inventory hosts debianserver.yml --ask-sudo-pass
+ansible-playbook -i hosts --ask-sudo-pass --extra-vars="renew_ssh=yes" debianserver.yml
